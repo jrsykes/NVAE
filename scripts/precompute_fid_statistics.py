@@ -6,17 +6,25 @@
 # ---------------------------------------------------------------
 import os
 import argparse
+
+import sys
+sys.path.append("..")
+
 from fid.fid_score import compute_statistics_of_generator, save_statistics
-from datasets import get_loaders_eval
+#from datasets import get"_loaders_eval
+from utils import load_data
 from fid.inception import InceptionV3
 from itertools import chain
-
 
 def main(args):
     device = 'cuda'
     dims = 2048
     # for binary datasets including MNIST and OMNIGLOT, we don't apply binarization for FID computation
-    train_queue, valid_queue, _ = get_loaders_eval(args.dataset, args)
+    #train_queue, valid_queue, _ = get_loaders_eval(args.dataset, args)
+
+
+    train_queue, valid_queue, num_classes = load_data(args)
+
     print('len train queue', len(train_queue), 'len val queue', len(valid_queue), 'batch size', args.batch_size)
     if args.dataset in {'celeba_256', 'omniglot'}:
         train_queue = chain(train_queue, valid_queue)
@@ -34,7 +42,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('')
     parser.add_argument('--dataset', type=str, default='cifar10',
                         choices=['cifar10', 'celeba_64', 'celeba_256', 'omniglot', 'mnist',
-                                 'imagenet_32', 'ffhq', 'lsun_bedroom_128', 'lsun_church_256'],
+                                 'imagenet_32', 'ffhq', 'lsun_bedroom_128', 'lsun_church_256', 'custom'],
                         help='which dataset to use')
     parser.add_argument('--data', type=str, default='/tmp/nvae-diff/data',
                         help='location of the data corpus')
@@ -44,6 +52,10 @@ if __name__ == '__main__':
                         help='batch size per GPU')
     parser.add_argument('--fid_dir', type=str, default='/tmp/fid-stats',
                         help='A dir to store fid related files')
+    parser.add_argument('--input_size', type=int, default=224,
+                        help='Image input size')
+    parser.add_argument('--eval_mode', type=str, default='evaluate_fid', choices=['sample', 'evaluate', 'evaluate_fid'],
+                        help='evaluation mode. you can choose between sample or evaluate.')
 
     args = parser.parse_args()
     args.distributed = False
