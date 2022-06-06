@@ -9,7 +9,11 @@ import argparse
 import lmdb
 import os
 import torchvision.datasets as dset
+import torchvision
+import torch
+import torchvision.transforms as transforms
 
+res_size = 224
 
 def main(split, img_path, lmdb_path):
     assert split in {"train", "valid", "test"}
@@ -21,15 +25,27 @@ def main(split, img_path, lmdb_path):
     lmdb_path = os.path.join(lmdb_path, '%s.lmdb' % lmdb_split)
 
     # if you don't have this will download the data
-    data = dset.celeba.CelebA(root=img_path, split=split, target_type='attr', transform=None, download=True)
+    #data = dset.celeba.CelebA(root=img_path, split=split, target_type='attr', transform=None, download=True)
     print(len('total data'))
+
+
+    train_transform = transforms.Compose([transforms.Resize([int(res_size*1.15), int(res_size*1.15)]),
+                                transforms.RandomCrop(size=res_size),
+                                transforms.RandomHorizontalFlip(),
+                                #transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                                transforms.ToTensor()])
+
+    data = torchvision.datasets.ImageFolder(img_path, transform=train_transform)
+    loader = torch.utils.data.DataLoader(data, batch_size=1, num_workers=6)
 
     # create lmdb
     env = lmdb.open(lmdb_path, map_size=1e12)
     with env.begin(write=True) as txn:
-        for i in range(len(data)):
-            file_path = os.path.join(data.root, data.base_folder, "img_align_celeba", data.filename[i])
-            attr = data.attr[i, :]
+        #for i in range(len(loader.dataset)):
+        for i in data.imgs:
+            #file_path = os.path.join(data.root, data.base_folder, "img_align_celeba", data.filename[i])
+            file_path = i[0]
+            #attr = data.attr[i, :]
             with open(file_path, 'rb') as f:
                 file_data = f.read()
 

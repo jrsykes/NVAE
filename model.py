@@ -16,7 +16,7 @@ from neural_ar_operations import ARConv2d, ARInvertedResidual, MixLogCDFParam, m
 from neural_ar_operations import ELUConv as ARELUConv
 from torch.distributions.bernoulli import Bernoulli
 
-from utils import get_stride_for_cell_type, get_input_size, groups_per_scale
+from utils import get_stride_for_cell_type, groups_per_scale #,get_input_size
 from distributions import Normal, DiscMixLogistic, NormalDecoder
 from thirdparty.inplaced_sync_batchnorm import SyncBatchNormSwish
 
@@ -134,7 +134,7 @@ class AutoEncoder(nn.Module):
         self.num_cell_per_cond_dec = args.num_cell_per_cond_dec  # number of cell for each conditional in decoder
 
         # general cell parameters
-        self.input_size = get_input_size(self.dataset)
+        self.input_size = args.input_size# = get_input_size(self.dataset)
 
         # decoder param
         self.num_mix_output = args.num_mixture_dec
@@ -486,7 +486,7 @@ class AutoEncoder(nn.Module):
         if self.dataset in {'mnist', 'omniglot'}:
             return Bernoulli(logits=logits)
         elif self.dataset in {'stacked_mnist', 'cifar10', 'celeba_64', 'celeba_256', 'imagenet_32', 'imagenet_64', 'ffhq',
-                              'lsun_bedroom_128', 'lsun_bedroom_256', 'lsun_church_64', 'lsun_church_128'}:
+                              'lsun_bedroom_128', 'lsun_bedroom_256', 'lsun_church_64', 'lsun_church_128', 'custom'}:
             if self.num_mix_output == 1:
                 return NormalDecoder(logits, num_bits=self.num_bits)
             else:

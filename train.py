@@ -18,10 +18,14 @@ from torch.cuda.amp import autocast, GradScaler
 from model import AutoEncoder
 from thirdparty.adamax import Adamax
 import utils
-import datasets
+#import datasets
 
 from fid.fid_score import compute_statistics_of_generator, load_statistics, calculate_frechet_distance
 from fid.inception import InceptionV3
+
+import torch
+
+
 
 
 def main(args):
@@ -34,8 +38,13 @@ def main(args):
     logging = utils.Logger(args.global_rank, args.save)
     writer = utils.Writer(args.global_rank, args.save)
 
+
     # Get data loaders.
-    train_queue, valid_queue, num_classes = datasets.get_loaders(args)
+    #train_queue, valid_queue, num_classes = datasets.get_loaders(args)
+    #My edit
+    train_queue, valid_queue, num_classes, sampler = utils.load_data(args)
+    #######
+
     args.num_total_iter = len(train_queue) * args.epochs
     warmup_iters = len(train_queue) * args.warmup_epochs
     swa_start = len(train_queue) * (args.epochs - 1)
@@ -61,7 +70,8 @@ def main(args):
         cnn_optimizer, float(args.epochs - args.warmup_epochs - 1), eta_min=args.learning_rate_min)
     grad_scalar = GradScaler(2**10)
 
-    num_output = utils.num_output(args.dataset)
+    #num_output = utils.num_output(args.dataset)
+    num_output = args.input_size**2*3
     bpd_coeff = 1. / np.log(2.) / num_output
 
     # if load
@@ -82,8 +92,17 @@ def main(args):
     for epoch in range(init_epoch, args.epochs):
         # update lrs.
         if args.distributed:
-            train_queue.sampler.set_epoch(global_step + args.seed)
-            valid_queue.sampler.set_epoch(0)
+#            print(valid_queue)
+#            #My edit
+#            train_queue = torch.utils.data.distributed.DistributedSampler(train_queue)
+#            valid_queue = torch.utils.data.distributed.DistributedSampler(valid_queue)
+#            #####
+#            print(valid_queue)
+#            exit()
+            sampler['train'].set_epoch(global_step + args.seed)
+            sampler['val'].set_epoch(0)
+            #train_queue.set_epoch(global_step + args.seed)
+            #valid_queue.set_epoch(0)
 
         if epoch > args.warmup_epochs:
             cnn_scheduler.step()
@@ -340,7 +359,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', type=str, default='mnist',
                         choices=['cifar10', 'mnist', 'omniglot', 'celeba_64', 'celeba_256',
                                  'imagenet_32', 'ffhq', 'lsun_bedroom_128', 'stacked_mnist',
-                                 'lsun_church_128', 'lsun_church_64'],
+                                 'lsun_church_128', 'lsun_church_64', 'custom'],
                         help='which dataset to use')
     parser.add_argument('--data', type=str, default='/tmp/nasvae/data',
                         help='location of the data corpus')
@@ -362,6 +381,8 @@ if __name__ == '__main__':
                              '--weight_decay_norm_init to --weight_decay_norm.')
     parser.add_argument('--epochs', type=int, default=200,
                         help='num of training epochs')
+    parser.add_argument('--input_size', type=int, default=224,
+                        help='Image input size')
     parser.add_argument('--warmup_epochs', type=int, default=5,
                         help='num of training epochs in which lr is warmed up')
     parser.add_argument('--fast_adamax', action='store_true', default=False,

@@ -19,6 +19,7 @@ import torch.distributed as dist
 
 import torch.nn.functional as F
 from tensorboardX import SummaryWriter
+from torchvision import datasets, models, transforms
 
 
 class AvgrageMeter(object):
@@ -311,18 +312,20 @@ def num_output(dataset):
         raise NotImplementedError
 
 
-def get_input_size(dataset):
-    if dataset in {'mnist', 'omniglot'}:
-        return 32
-    elif dataset == 'cifar10':
-        return 32
-    elif dataset.startswith('celeba') or dataset.startswith('imagenet') or dataset.startswith('lsun'):
-        size = int(dataset.split('_')[-1])
-        return size
-    elif dataset == 'ffhq':
-        return 256
-    else:
-        raise NotImplementedError
+#def get_input_size(dataset):
+#    if dataset in {'mnist', 'omniglot'}:
+#        return 32
+#    elif dataset == 'cifar10':
+#        return 32
+#    elif dataset.startswith('celeba') or dataset.startswith('imagenet') or dataset.startswith('lsun'):
+#        size = int(dataset.split('_')[-1])
+#        return size
+#    elif dataset == 'ffhq':
+#        return 256
+#    elif dataset == 'custom':
+#        return 224
+#    else:
+#        raise NotImplementedError
 
 
 def pre_process(x, num_bits):
@@ -481,3 +484,31 @@ def groups_per_scale(num_scales, num_groups_per_scale, is_adaptive, divider=2, m
             n = n // divider
             n = max(minimum_groups, n)
     return g
+
+
+
+def load_data(args):
+    # Data augmentation and normalization for training
+    # Just normalization for validation
+    data_transforms = {
+        'train': transforms.Compose([
+            transforms.RandomResizedCrop(args.input_size),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+        ]),
+        'val': transforms.Compose([
+            transforms.Resize((args.input_size,args.input_size)),
+            transforms.ToTensor(),
+        ]),
+    }
+    # Create training and validation datasets
+    image_datasets = {x: datasets.ImageFolder(os.path.join(args.data, x), data_transforms[x]) for x in ['train', 'val']}
+    # Create training and validation dataloaders
+    sampler = {x: torch.utils.data.distributed.DistributedSampler(image_datasets[x]) for x in ['train', 'val']}
+
+    dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=args.batch_size, 
+        num_workers=6, sampler=sampler[x]) for x in ['train', 'val']}   
+
+    num_classes = len(os.listdir(os.path.join(args.data, 'val')))
+
+    return dataloaders_dict['train'], dataloaders_dict['val'], num_classes, sampler

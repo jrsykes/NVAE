@@ -17,7 +17,7 @@ from torch.cuda.amp import autocast
 
 from model import AutoEncoder
 import utils
-import datasets
+#import datasets
 from train import test, init_processes, test_vae_fid
 
 
@@ -75,14 +75,16 @@ def main(eval_args):
     if eval_args.eval_mode == 'evaluate':
         # load train valid queue
         args.data = eval_args.data
-        train_queue, valid_queue, num_classes = datasets.get_loaders(args)
+        #train_queue, valid_queue, num_classes = datasets.get_loaders(args)
+        train_queue, valid_queue, num_classes, sampler = utils.load_data(args)
 
         if eval_args.eval_on_train:
             logging.info('Using the training data for eval.')
             valid_queue = train_queue
 
         # get number of bits
-        num_output = utils.num_output(args.dataset)
+        #num_output = utils.num_output(args.dataset)
+        num_output = args.input_size**2*3
         bpd_coeff = 1. / np.log(2.) / num_output
 
         valid_neg_log_p, valid_nelbo = test(valid_queue, model, num_samples=eval_args.num_iw_samples, args=args, logging=logging)
@@ -164,6 +166,8 @@ if __name__ == '__main__':
                         help='seed used for initialization')
     parser.add_argument('--master_address', type=str, default='127.0.0.1',
                         help='address for master')
+    parser.add_argument('--input_size', type=int, default=224,
+                        help='Image input size')
 
     args = parser.parse_args()
     utils.create_exp_dir(args.save)
