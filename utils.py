@@ -490,8 +490,6 @@ def groups_per_scale(num_scales, num_groups_per_scale, is_adaptive, divider=2, m
 def load_data(args):
     # Data augmentation and normalization for training
     # Just normalization for validation
-    num_classes = len(os.listdir(os.path.join(args.data, 'val')))
-
     data_transforms = {
         'train': transforms.Compose([
             transforms.RandomResizedCrop(args.input_size),
@@ -503,21 +501,16 @@ def load_data(args):
             transforms.ToTensor(),
         ]),
     }
-    
-
     # Create training and validation datasets
     image_datasets = {x: datasets.ImageFolder(os.path.join(args.data, x), data_transforms[x]) for x in ['train', 'val']}
     # Create training and validation dataloaders
     
-    if args.eval_mode == 'evaluate_fid':
-        dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=args.batch_size, 
-            num_workers=6) for x in ['train', 'val']} 
 
-        return dataloaders_dict['train'], dataloaders_dict['val'], num_classes
+    sampler = {x: torch.utils.data.distributed.DistributedSampler(image_datasets[x]) for x in ['train', 'val']}
 
-    else:
-        sampler = {x: torch.utils.data.distributed.DistributedSampler(image_datasets[x]) for x in ['train', 'val']}
-        dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=args.batch_size, 
-            num_workers=6, sampler=sampler[x]) for x in ['train', 'val']}   
+    dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=args.batch_size, 
+        num_workers=6, sampler=sampler[x]) for x in ['train', 'val']}   
 
-        return dataloaders_dict['train'], dataloaders_dict['val'], num_classes, sampler
+    num_classes = len(os.listdir(os.path.join(args.data, 'val')))
+
+    return dataloaders_dict['train'], dataloaders_dict['val'], num_classes, sampler

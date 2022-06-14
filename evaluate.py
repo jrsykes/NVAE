@@ -92,6 +92,8 @@ def main(eval_args):
         logging.info('final valid neg log p %f', valid_neg_log_p)
         logging.info('final valid nelbo in bpd %f', valid_nelbo * bpd_coeff)
         logging.info('final valid neg log p in bpd %f', valid_neg_log_p * bpd_coeff)
+
+
     elif eval_args.eval_mode == 'evaluate_fid':
         bn_eval_mode = not eval_args.readjust_bn
         set_bn(model, bn_eval_mode, num_samples=2, t=eval_args.temp, iter=500)

@@ -1,6 +1,7 @@
 export EXPR_ID='exp'                     #UNIQUE_EXPR_ID
-#export DATA_DIR='/local/scratch/jrs596/dat/ResNetFung50+_images_organised'                       #PATH_TO_DATA_DIR
-export DATA_DIR='/local/scratch/jrs596/dat/test'
+export DATA_DIR='/local/scratch/jrs596/dat/ResNetFung50+_images_organised'
+#export DATA_DIR='/local/scratch/jrs596/dat/Forestry_ArableImages_GoogleBing_Licenced_clean'                       #PATH_TO_DATA_DIR
+#export DATA_DIR='/local/scratch/jrs596/dat/test'
 export CHECKPOINT_DIR='/local/scratch/jrs596/dat/NVAE/CheckPoint'       #PATH_TO_CHECKPOINT_DIR
 export FID_DIR='/local/scratch/jrs596/dat/NVAE/eval/FID'
 export CODE_DIR='/home/userfs/j/jrs596/scripts/NVAE/scripts'        #PATH_TO_CODE_DIR

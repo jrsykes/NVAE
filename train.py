@@ -24,6 +24,7 @@ from fid.fid_score import compute_statistics_of_generator, load_statistics, calc
 from fid.inception import InceptionV3
 
 import torch
+import pandas as pd
 
 
 
@@ -256,12 +257,15 @@ def train(train_queue, model, cnn_optimizer, grad_scalar, global_step, warmup_it
 
 
 def test(valid_queue, model, num_samples, args, logging):
+
     if args.distributed:
         dist.barrier()
     nelbo_avg = utils.AvgrageMeter()
     neg_log_p_avg = utils.AvgrageMeter()
     model.eval()
+    df = pd.DataFrame(columns=['file', 'loss'])
     for step, x in enumerate(valid_queue):
+        file_name = valid_queue.dataset.samples[step][0]
         x = x[0] if len(x) > 1 else x
         x = x.cuda()
 
@@ -284,6 +288,12 @@ def test(valid_queue, model, num_samples, args, logging):
 
         nelbo_avg.update(nelbo.data, x.size(0))
         neg_log_p_avg.update(- log_p.data, x.size(0))
+
+        #df.concat({'file':file_name, 'loss':float(recon_loss.item())}, ignore_index=True)
+
+        df.loc[len(df)] = [file_name, float(recon_loss.item())]
+
+    df.to_csv(os.path.join('/local/scratch/jrs596/dat/NVAE/eval', 'losses.csv'), index=False)
 
     utils.average_tensor(nelbo_avg.avg, args.distributed)
     utils.average_tensor(neg_log_p_avg.avg, args.distributed)
