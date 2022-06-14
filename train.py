@@ -289,11 +289,10 @@ def test(valid_queue, model, num_samples, args, logging):
         nelbo_avg.update(nelbo.data, x.size(0))
         neg_log_p_avg.update(- log_p.data, x.size(0))
 
-        #df.concat({'file':file_name, 'loss':float(recon_loss.item())}, ignore_index=True)
 
-        df.loc[len(df)] = [file_name, float(recon_loss.item())]
-
-    df.to_csv(os.path.join('/local/scratch/jrs596/dat/NVAE/eval', 'losses.csv'), index=False)
+        if args.eval_mode == 'evaluate':
+            df.loc[len(df)] = [file_name, float(recon_loss.item())]
+            df.to_csv(os.path.join('/local/scratch/jrs596/dat/NVAE/eval', 'losses.csv'), index=False)
 
     utils.average_tensor(nelbo_avg.avg, args.distributed)
     utils.average_tensor(neg_log_p_avg.avg, args.distributed)
@@ -365,6 +364,8 @@ if __name__ == '__main__':
                         help='location of the results')
     parser.add_argument('--save', type=str, default='exp',
                         help='id used for storing intermediate results')
+    parser.add_argument('--eval_mode', type=str, default='sample', choices=['sample', 'evaluate', 'evaluate_fid'],
+                        help='evaluation mode. you can choose between sample or evaluate.')
     # data
     parser.add_argument('--dataset', type=str, default='mnist',
                         choices=['cifar10', 'mnist', 'omniglot', 'celeba_64', 'celeba_256',
