@@ -72,11 +72,15 @@ def main(eval_args):
     logging.info('num conv layers: %d', len(model.all_conv_layers))
     logging.info('param size = %fM ', utils.count_parameters_in_M(model))
 
+
     if eval_args.eval_mode == 'evaluate':
         # load train valid queue
+    
         args.data = eval_args.data
+        args.eval_mode = 'evaluate'
+
         #train_queue, valid_queue, num_classes = datasets.get_loaders(args)
-        train_queue, valid_queue, num_classes, sampler = utils.load_data(args)
+        train_queue, num_classes, sampler = utils.load_data(args)
 
         if eval_args.eval_on_train:
             logging.info('Using the training data for eval.')
@@ -86,8 +90,7 @@ def main(eval_args):
         #num_output = utils.num_output(args.dataset)
         num_output = args.input_size**2*3
         bpd_coeff = 1. / np.log(2.) / num_output
-
-        valid_neg_log_p, valid_nelbo = test(valid_queue, model, num_samples=eval_args.num_iw_samples, args=args, logging=logging)
+        valid_neg_log_p, valid_nelbo = test(train_queue, model, num_samples=eval_args.num_iw_samples, args=args, logging=logging)
         logging.info('final valid nelbo %f', valid_nelbo)
         logging.info('final valid neg log p %f', valid_neg_log_p)
         logging.info('final valid nelbo in bpd %f', valid_nelbo * bpd_coeff)
@@ -143,7 +146,7 @@ if __name__ == '__main__':
                         help='location of the checkpoint')
     parser.add_argument('--save', type=str, default='/tmp/expr',
                         help='location of the checkpoint')
-    parser.add_argument('--eval_mode', type=str, default='sample', choices=['sample', 'evaluate', 'evaluate_fid', False],
+    parser.add_argument('--eval_mode', type=str, default='sample', choices=['sample', 'evaluate', 'evaluate_fid'],
                         help='evaluation mode. you can choose between sample or evaluate.')
     parser.add_argument('--eval_on_train', action='store_true', default=False,
                         help='Settings this to true will evaluate the model on training data.')

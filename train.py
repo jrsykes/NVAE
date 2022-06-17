@@ -25,7 +25,7 @@ from fid.inception import InceptionV3
 
 import torch
 import pandas as pd
-
+import matplotlib.pyplot as plt
 
 
 
@@ -263,14 +263,19 @@ def test(valid_queue, model, num_samples, args, logging):
     nelbo_avg = utils.AvgrageMeter()
     neg_log_p_avg = utils.AvgrageMeter()
     model.eval()
-    df = pd.DataFrame(columns=['file', 'loss'])
-    for step, x in enumerate(valid_queue):
-        file_name = valid_queue.dataset.samples[step][0]
+    #df = pd.DataFrame(columns=['file', 'loss'])
+
+    losses = {}
+    for step, (x, labels) in enumerate(valid_queue, 0):
+        
+#        plt.imshow(  x[0].permute(1, 2, 0)  )
+#        plt.show()
+
         x = x[0] if len(x) > 1 else x
         x = x.cuda()
-
         # change bit length
         x = utils.pre_process(x, args.num_x_bits)
+
 
         with torch.no_grad():
             nelbo, log_iw = [], []
@@ -283,6 +288,7 @@ def test(valid_queue, model, num_samples, args, logging):
                 nelbo.append(nelbo_batch)
                 log_iw.append(utils.log_iw(output, x, log_q, log_p, crop=model.crop_output))
 
+            
             nelbo = torch.mean(torch.stack(nelbo, dim=1))
             log_p = torch.mean(torch.logsumexp(torch.stack(log_iw, dim=1), dim=1) - np.log(num_samples))
 
@@ -291,8 +297,12 @@ def test(valid_queue, model, num_samples, args, logging):
 
 
         if args.eval_mode == 'evaluate':
-            df.loc[len(df)] = [file_name, float(recon_loss.item())]
-            df.to_csv(os.path.join('/local/scratch/jrs596/dat/NVAE/eval', 'losses.csv'), index=False)
+            file_name, _ = valid_queue.dataset.samples[step]
+            losses[file_name] = float(recon_loss.item())
+        
+    df = pd.DataFrame(losses.items())
+    df.columns=['file', 'loss']
+    df.to_csv(os.path.join('/scratch/staff/jrs596/dat/NVAE/eval_HFDS', 'losses.csv'), index=False)
 
     utils.average_tensor(nelbo_avg.avg, args.distributed)
     utils.average_tensor(neg_log_p_avg.avg, args.distributed)

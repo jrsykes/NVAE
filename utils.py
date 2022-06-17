@@ -488,6 +488,7 @@ def groups_per_scale(num_scales, num_groups_per_scale, is_adaptive, divider=2, m
 
 
 def load_data(args):
+
     # Data augmentation and normalization for training
     # Just normalization for validation
     data_transforms = {
@@ -501,16 +502,25 @@ def load_data(args):
             transforms.ToTensor(),
         ]),
     }
-    # Create training and validation datasets
-    image_datasets = {x: datasets.ImageFolder(os.path.join(args.data, x), data_transforms[x]) for x in ['train', 'val']}
-    # Create training and validation dataloaders
     
+    if args.eval_mode == 'evaluate':
+        # Create training and validation datasets
+        image_datasets = {x: datasets.ImageFolder(os.path.join(args.data, x), data_transforms[x]) for x in ['val']}
+        # Create training and validation dataloaders
+        sampler = {x: torch.utils.data.distributed.DistributedSampler(image_datasets[x], shuffle=False) for x in ['val']}
+        dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=args.batch_size, 
+            num_workers=6, sampler=sampler[x]) for x in ['val']}       
 
-    sampler = {x: torch.utils.data.distributed.DistributedSampler(image_datasets[x]) for x in ['train', 'val']}
+        num_classes = len(os.listdir(os.path.join(args.data, 'val')))
+        return dataloaders_dict['val'], num_classes, sampler  
 
-    dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=args.batch_size, 
-        num_workers=6, sampler=sampler[x]) for x in ['train', 'val']}   
+    else:
+        # Create training and validation datasets
+        image_datasets = {x: datasets.ImageFolder(os.path.join(args.data, x), data_transforms[x]) for x in ['train', 'val']}
+        # Create training and validation dataloaders
+        sampler = {x: torch.utils.data.distributed.DistributedSampler(image_datasets[x]) for x in ['train', 'val']}
+        dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], shuffle=False, batch_size=args.batch_size, 
+            num_workers=6, sampler=sampler[x]) for x in ['train', 'val']}       
 
-    num_classes = len(os.listdir(os.path.join(args.data, 'val')))
-
-    return dataloaders_dict['train'], dataloaders_dict['val'], num_classes, sampler
+        num_classes = len(os.listdir(os.path.join(args.data, 'val')))
+        return dataloaders_dict['train'], dataloaders_dict['val'], num_classes, sampler
