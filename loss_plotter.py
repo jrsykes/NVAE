@@ -6,7 +6,7 @@ import scipy.stats as st
 import os
 import shutil
 
-df = pd.read_csv('/local/scratch/jrs596/dat/NVAE/eval/losses.csv', header=0)
+df = pd.read_csv('/scratch/staff/jrs596/dat/NVAE/eval_HFDS/losses.csv', header=0)
 
 
 
@@ -37,16 +37,17 @@ print(upper)
 lower = Q1 - whis*IQR
 print(lower)
 
-#fig = plt.figure(figsize =(10, 7))
-#plt.boxplot(df['loss'], showfliers=True, whis=whis)
-#plt.show()
-#plt.cla()#
+fig = plt.figure(figsize =(10, 7))
+plt.boxplot(df['loss'], showfliers=True, whis=whis)
+plt.show()
+plt.cla()#
 
-#plt.hist(df['loss'])
-#plt.show()
+plt.hist(df['loss'])
+plt.show()
+
 
 for i in range(len(df['loss'])):
-	if df['loss'][i] < lower:
+	if df['loss'][i] > upper:
 		source = df['file'][i]
-		dest = os.path.join('/local/scratch/jrs596/dat/NonePlantIM4_NVAE', str(i) + '.jpeg')
+		dest = os.path.join('/scratch/staff/jrs596/dat/NonePlantIM_NVAE', str(i) + '.jpeg')
 		shutil.copy(source,dest)

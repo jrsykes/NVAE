@@ -20,7 +20,6 @@ import utils
 #import datasets
 from train import test, init_processes, test_vae_fid
 
-
 def set_bn(model, bn_eval_mode, num_samples=1, t=1.0, iter=100):
     if bn_eval_mode:
         model.eval()
@@ -79,8 +78,10 @@ def main(eval_args):
         args.data = eval_args.data
         args.eval_mode = 'evaluate'
 
+        print('Loading data')
         #train_queue, valid_queue, num_classes = datasets.get_loaders(args)
         train_queue, num_classes, sampler = utils.load_data(args)
+        print('Data loaded')
 
         if eval_args.eval_on_train:
             logging.info('Using the training data for eval.')

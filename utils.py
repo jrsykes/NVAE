@@ -505,14 +505,14 @@ def load_data(args):
     
     if args.eval_mode == 'evaluate':
         # Create training and validation datasets
-        image_datasets = {x: datasets.ImageFolder(os.path.join(args.data, x), data_transforms[x]) for x in ['val']}
+        image_dataset = datasets.ImageFolder(args.data, data_transforms['val'])
         # Create training and validation dataloaders
-        sampler = {x: torch.utils.data.distributed.DistributedSampler(image_datasets[x], shuffle=False) for x in ['val']}
-        dataloaders_dict = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=args.batch_size, 
-            num_workers=6, sampler=sampler[x]) for x in ['val']}       
+        sampler = torch.utils.data.distributed.DistributedSampler(image_dataset, shuffle=False)
+        dataloader = torch.utils.data.DataLoader(image_dataset, batch_size=args.batch_size, 
+            num_workers=6, sampler=sampler)       
 
-        num_classes = len(os.listdir(os.path.join(args.data, 'val')))
-        return dataloaders_dict['val'], num_classes, sampler  
+        num_classes = len(os.listdir(args.data))
+        return dataloader, num_classes, sampler  
 
     else:
         # Create training and validation datasets

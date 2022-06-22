@@ -267,6 +267,7 @@ def test(valid_queue, model, num_samples, args, logging):
 
     losses = {}
     #for step, (x, labels) in enumerate(valid_queue, 0):
+    print('Evaluating...')
     for step, x in enumerate(valid_queue):
         
 #        plt.imshow(  x[0].permute(1, 2, 0)  )
@@ -301,7 +302,7 @@ def test(valid_queue, model, num_samples, args, logging):
     if args.eval_mode == 'evaluate':    
         df = pd.DataFrame(losses.items())
         df.columns=['file', 'loss']
-        df.to_csv(os.path.join('/scratch/staff/jrs596/dat/NVAE/eval_HFDS', 'losses.csv'), index=False)
+        df.to_csv(os.path.join('/local/scratch/jrs596/dat/NVAE/eval_full_minimal_model', 'losses.csv'), index=False)
 
     utils.average_tensor(nelbo_avg.avg, args.distributed)
     utils.average_tensor(neg_log_p_avg.avg, args.distributed)
