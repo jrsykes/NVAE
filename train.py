@@ -266,17 +266,15 @@ def test(valid_queue, model, num_samples, args, logging):
     #df = pd.DataFrame(columns=['file', 'loss'])
 
     losses = {}
-    for step, (x, labels) in enumerate(valid_queue, 0):
+    #for step, (x, labels) in enumerate(valid_queue, 0):
+    for step, x in enumerate(valid_queue):
         
 #        plt.imshow(  x[0].permute(1, 2, 0)  )
 #        plt.show()
-
         x = x[0] if len(x) > 1 else x
         x = x.cuda()
         # change bit length
         x = utils.pre_process(x, args.num_x_bits)
-
-
         with torch.no_grad():
             nelbo, log_iw = [], []
             for k in range(num_samples):
@@ -299,10 +297,11 @@ def test(valid_queue, model, num_samples, args, logging):
         if args.eval_mode == 'evaluate':
             file_name, _ = valid_queue.dataset.samples[step]
             losses[file_name] = float(recon_loss.item())
-        
-    df = pd.DataFrame(losses.items())
-    df.columns=['file', 'loss']
-    df.to_csv(os.path.join('/scratch/staff/jrs596/dat/NVAE/eval_HFDS', 'losses.csv'), index=False)
+    
+    if args.eval_mode == 'evaluate':    
+        df = pd.DataFrame(losses.items())
+        df.columns=['file', 'loss']
+        df.to_csv(os.path.join('/scratch/staff/jrs596/dat/NVAE/eval_HFDS', 'losses.csv'), index=False)
 
     utils.average_tensor(nelbo_avg.avg, args.distributed)
     utils.average_tensor(neg_log_p_avg.avg, args.distributed)
